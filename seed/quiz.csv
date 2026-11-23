@@ -1,0 +1,62 @@
+Deck,Question,Correct answer,Wrong 1,Wrong 2,Wrong 3,Explanation,Show
+econ,A good's price elasticity of demand is -1.5. Demand is…,Price elastic,Price inelastic,Unit elastic,Perfectly inelastic,|PED| > 1 means quantity reacts more than proportionally to price.,yes
+econ,Opportunity cost is…,The next best alternative given up,The money price paid,Total cost minus revenue,The cost of producing one more unit,Every choice has a cost: the best option you didn't pick.,yes
+econ,A government subsidy to producers shifts…,Supply to the right,Supply to the left,Demand to the right,Demand to the left,Lower production costs mean more is supplied at every price.,yes
+econ,A maximum price set below equilibrium causes…,A shortage,A surplus,No change,Higher prices,Quantity demanded exceeds quantity supplied at the capped price.,yes
+econ,"With a negative production externality, a free market…",Overproduces vs the social optimum,Underproduces vs the social optimum,Hits the social optimum,Stops producing,"Firms ignore the external cost, so marginal social cost > marginal private cost.",yes
+econ,Demand-pull inflation is caused by…,A rise in aggregate demand,A rise in oil prices,A fall in wages,A rise in productivity,Too much spending chasing too few goods.,yes
+econ,Contractionary monetary policy usually means…,Raising interest rates,Cutting taxes,Raising government spending,Printing money,Higher rates cool borrowing and spending.,yes
+econ,Which is a classic merit good?,Education,Cigarettes,Luxury cars,Fast fashion,Under-consumed in a free market because people undervalue its benefits.,yes
+econ,Comparative advantage is based on…,Lower opportunity cost,Producing more in total,Cheaper labour only,Bigger population,Specialise where your opportunity cost is lowest.,yes
+econ,Incomes rise and demand for an inferior good…,Falls,Rises,Stays the same,Becomes perfectly elastic,Negative income elasticity: people switch to better options.,yes
+econ,A Gini coefficient of 0 means…,Perfect income equality,Perfect inequality,Zero GDP,No unemployment,0 = everyone earns the same; 1 = one person has everything.,yes
+econ,A tariff on imported steel will most likely…,Raise domestic steel prices,Lower domestic steel prices,Increase steel imports,Cut domestic production,"Imports get pricier, domestic producers expand, consumers pay more.",yes
+psych,Patient HM's case showed the hippocampus is key for…,Forming new long-term memories,Motor coordination,Vision,Language production,After surgery HM could not form new explicit memories.,yes
+psych,The multi-store model of memory was proposed by…,Atkinson & Shiffrin,Baddeley & Hitch,Loftus & Palmer,Tajfel & Turner,Sensory → short-term → long-term.,yes
+psych,Which is NOT part of the working memory model?,Sensory register,Central executive,Phonological loop,Visuospatial sketchpad,The sensory register belongs to the multi-store model.,yes
+psych,Asch's conformity studies used…,Line-length judgements,Electric shocks,A prison simulation,Bobo dolls,Participants often gave obviously wrong answers to match the group.,yes
+psych,Loftus & Palmer (1974) showed that…,Leading questions can distort memory,Memory is perfect,Stress improves recall,Sleep erases memory,'Smashed' vs 'hit' changed speed estimates and false memories of glass.,yes
+psych,Seeking only information that supports what you already believe is…,Confirmation bias,Anchoring,Hindsight bias,The halo effect,A big one in exam answers and in group chats.,yes
+psych,The neurotransmitter most linked with reward is…,Dopamine,Melatonin,Insulin,Acetylcholine,Released when we expect or get rewards.,yes
+psych,Social identity theory was developed by…,Tajfel & Turner,Milgram,Bandura,Piaget,"Categorisation, identification, comparison → in-group bias.",yes
+psych,Cortisol is released by the…,Adrenal glands,Pituitary gland only,Pancreas,Thyroid,Part of the HPA-axis stress response.,yes
+psych,In a double-blind study…,Neither participants nor researchers know the condition,Only participants are blinded,There is no control group,Participants are told the hypothesis,Reduces demand characteristics and researcher bias.,yes
+psych,Bandura's Bobo doll study is evidence for…,Social learning theory,Classical conditioning,Schema theory,Localisation of function,Children imitated aggression they observed.,yes
+psych,Kahneman's 'System 1' thinking is…,Fast and automatic,Slow and logical,Only used in maths,Conscious and effortful,"System 2 is the slow, deliberate one.",yes
+bio,Aerobic respiration mainly happens in the…,Mitochondria,Ribosomes,Golgi apparatus,Nucleus,The Krebs cycle and electron transport chain are here.,yes
+bio,"In DNA, adenine pairs with…",Thymine,Uracil,Guanine,Cytosine,Uracil replaces thymine in RNA.,yes
+bio,Enzymes speed up reactions by lowering…,Activation energy,Temperature,pH,Substrate concentration,They provide an alternative pathway.,yes
+bio,Osmosis is the movement of…,Water across a partially permeable membrane,Glucose against a gradient,Ions through pumps,Proteins by endocytosis,From lower to higher solute concentration.,yes
+bio,Meiosis produces…,Four genetically different haploid cells,Two identical diploid cells,Four identical diploid cells,Two haploid clones,Crossing over and random orientation create variety.,yes
+bio,The light-dependent reactions occur in the…,Thylakoid membranes,Stroma,Cytoplasm,Mitochondrial matrix,The Calvin cycle runs in the stroma.,yes
+bio,Carbon fixation in the Calvin cycle is catalysed by…,RuBisCO,ATP synthase,Amylase,DNA polymerase,Probably the most abundant protein on Earth.,yes
+bio,Natural selection cannot happen without…,Heritable variation,Mutation every generation,Mass extinction,Sexual reproduction,"No variation, nothing to select.",yes
+bio,Antibodies are produced by…,Plasma cells (from B lymphocytes),Red blood cells,Platelets,T helper cells,"Helper T cells activate B cells, which become plasma cells.",yes
+bio,A codon is…,Three bases on mRNA,One amino acid,A gene,Two bases on tRNA,The anticodon on tRNA pairs with it.,yes
+bio,Insulin is secreted by…,Beta cells of the pancreas,Alpha cells of the pancreas,The liver,The adrenal glands,It lowers blood glucose; glucagon raises it.,yes
+bio,Which is the correct order of biological organisation?,Cell → tissue → organ → system,Tissue → cell → organ → system,Organ → cell → tissue → system,Cell → organ → tissue → system,Small to large.,yes
+sport,Fast-twitch muscle fibres are best suited to…,Sprinting,Marathon running,Posture,Sleeping,Powerful but quick to fatigue.,yes
+sport,Lactate builds up in hard exercise because of…,Anaerobic respiration,Too much oxygen,Protein digestion,Dehydration only,When oxygen supply can't keep up.,yes
+sport,VO₂ max measures…,Maximum rate of oxygen uptake,Maximum heart rate,Lung volume at rest,Top running speed,A key marker of aerobic fitness for cross-country.,yes
+sport,Altitude training mainly increases…,Red blood cell count,Muscle fibre number,Bone density,Lung size,Low oxygen triggers more EPO.,yes
+sport,A club raises ticket prices and total revenue rises. Demand is…,Price inelastic,Price elastic,Perfectly elastic,Unit elastic,Fans buy almost as many tickets anyway.,yes
+sport,A league salary cap is an example of…,A maximum price in a labour market,A minimum wage,A subsidy,A tariff,It caps what teams can spend on wages.,yes
+sport,Star players earn huge wages mainly because of…,High marginal revenue product and scarce talent,Government rules,Long contracts,Low ticket prices,They bring in far more revenue than an average player.,yes
+sport,Performing better on well-practised skills when a crowd watches is…,Social facilitation,Social loafing,Groupthink,Deindividuation,Crowds help experts and can hurt beginners.,yes
+game,Loot boxes reward players on a…,Variable-ratio schedule,Fixed-interval schedule,Continuous schedule,Fixed-ratio schedule,Unpredictable rewards make behaviour hard to stop.,yes
+game,A skin that's only in the shop for 24 hours uses…,Scarcity,Reciprocity,Social proof,Authority,Limited time makes things feel more valuable.,yes
+game,A free game that earns money from cosmetics uses a…,Freemium model,Subscription-only model,Pay-to-own model,Advertising-only model,"Free to start, pay for extras.",yes
+game,Selling in-game currency in bundles that never match item prices mainly…,Hides the real-money price and leaves leftovers,Lowers prices for players,Helps price comparison,Is required by law,Leftover coins nudge you to buy more.,yes
+game,A Nash equilibrium is where…,No player gains by changing strategy alone,Everyone wins,One player always wins,Players cooperate fully,Think rock-paper-scissors: the best mix is random.,yes
+game,Skill-based matchmaking often uses a rating system based on…,Elo (from chess),GDP,The Gini index,IQ,"Win against stronger players, gain more points.",yes
+game,Grinding a battle pass you no longer enjoy because you paid for it is the…,Sunk cost fallacy,Bandwagon effect,Anchoring bias,Placebo effect,Past spending shouldn't drive future choices.,yes
+game,A game is more valuable the more of your friends play it. That's…,A network effect,Diminishing returns,A negative externality,Price discrimination,Same reason everyone joins the same chat app.,yes
+game,"Creature types where A beats B, B beats C and C beats A are…",Intransitive (rock-paper-scissors),Transitive,Linear,Random,No single 'best' type keeps battles balanced.,yes
+chess,The Elo rating system was invented by…,Arpad Elo,Magnus Carlsen,José Raúl Capablanca,FIDE's founders in 1924,A physics professor and chess master.,yes
+chess,En passant can capture a pawn that…,"Just moved two squares, landing beside your pawn",Is on the 7th rank,Has not moved yet,Is pinned,Only on the very next move.,yes
+chess,You may NOT castle when…,Your king is in check,Your rook is attacked,It's your first move,Your queen is still on the board,Also not through or into check.,yes
+chess,1.e4 c5 is the…,Sicilian Defence,French Defence,Caro-Kann,Ruy Lopez,The most popular reply to 1.e4 at top level.,yes
+chess,Fool's Mate ends on…,Black's 2nd move,White's 2nd move,Black's 4th move,White's 4th move,1.f3 e5 2.g4 Qh4#,yes
+chess,The standard value of a rook is…,5,3,9,1,"Pawn 1, knight/bishop 3, rook 5, queen 9.",yes
+chess,The 50-move rule lets a player claim a draw after…,50 moves each with no capture or pawn move,50 total moves,50 checks,50 minutes,Prevents endless shuffling.,yes
+chess,"A king with no legal moves, not in check, and no other legal moves is…",Stalemate (draw),Checkmate,A win on time,Illegal,Always check for stalemate before you grab material!,yes
