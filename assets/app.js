@@ -1,7 +1,8 @@
 import { Chess, validateFen } from "../vendor/chess.js?v=1";
-import { DECKS, LINKS, PUZZLES, ORACLE, UPDATED } from "./data.js?v=1795457151";
-import { loadSheet, SHEET } from "./sheet.js?v=1795457151";
-import { WEEKLY } from "./weekly.js?v=1795457151";
+import { DECKS, LINKS, PUZZLES, ORACLE, UPDATED } from "./data.js?v=1795457417";
+import { loadSheet, SHEET } from "./sheet.js?v=1795457417";
+import { labView } from "./lab.js?v=1795457417";
+import { WEEKLY } from "./weekly.js?v=1795457417";
 
 /* ---------- utils ---------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -262,6 +263,7 @@ views[""] = () => {
       <a class="tilecard glow2 reveal" data-d="120" href="#/present"><div class="kicker">Club Deck</div><h3>Present. Export.</h3><div class="mockslide"><b>Back Rank</b><span style="width:70%"></span><span style="width:45%"></span></div><div class="go">⬇ ONE-CLICK POWERPOINT</div></a>
       <div class="tilecard reveal" data-d="160"><div class="kicker">Streak</div><div class="bignum" style="margin-top:auto">${streak.n}</div><p>days in a row</p></div>
       <div class="tilecard s2 reveal"><div class="kicker">Oracle transmission</div><div class="oracle" id="oracle" style="margin-top:14px"></div></div>
+      <a class="tilecard glow s2 reveal" href="#/lab"><div class="kicker">AI Lab · new</div><h3>AI is maths you already know.</h3><p>Train a soccer xG model. Find out why your chess rating is an AI. No code.</p><div class="go">START MISSION 1 <span>→</span></div></a>
       <a class="tilecard reveal" data-d="80" href="#/chess/build"><div class="kicker">Builder</div><h3>Make puzzles.</h3><p>The Oracle checks they really are a forced mate.</p><div class="more">Set up a position, pick mate-in-1 to 3, verify, share the link.</div><div class="go">OPEN <span>→</span></div></a>
       <a class="tilecard reveal" data-d="140" href="#/arcade/edit"><div class="kicker">Quiz editor</div><h3>Write your own.</h3><p>Copy any deck and change it.</p><div class="more">Questions, answers, explanations, colour and icon: all yours.</div><div class="go">OPEN <span>→</span></div></a>
     </div></div>`);
@@ -660,6 +662,8 @@ views["sheet"] = () => {
       <p class="label" style="margin-top:12px">Google refreshes the published copy about every 5 minutes.</p></div></div>`));
   $("#rl").onclick = () => { location.hash = "#/sheet"; location.reload(); };
 };
+
+views["lab"] = (sub) => labView(app, { h, $, esc, store, sub });
 
 /* Signal: profile */
 views["signal"] = () => {

@@ -272,3 +272,4 @@ a.tilecard:hover .more{max-height:60px;opacity:1}
   .missions{grid-template-columns:1fr} .story{grid-template-columns:1fr;gap:10px;margin:70px 0} .story .stick{position:static} .story .step{min-height:0;padding:24px 0 24px 20px;opacity:1}
 }
 @media (max-width:700px){ .tabbar a.on{background:rgba(200,255,77,.1);color:var(--acc)} .tabbar{left:10px;right:10px;width:auto;max-width:calc(100vw - 20px)} .scrollcue{display:none} .sky{width:100%;margin-left:-24px;margin-right:-24px;width:calc(100% + 48px)} }
+input[type=range]{accent-color:var(--acc);background:none;border:0;padding:0}
