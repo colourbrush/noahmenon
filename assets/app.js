@@ -1,7 +1,7 @@
-import { Chess, validateFen } from "../vendor/chess.js";
-import { DECKS, LINKS, PUZZLES, ORACLE, UPDATED } from "./data.js";
-import { loadSheet, SHEET } from "./sheet.js";
-import { WEEKLY } from "./weekly.js";
+import { Chess, validateFen } from "../vendor/chess.js?v=1";
+import { DECKS, LINKS, PUZZLES, ORACLE, UPDATED } from "./data.js?v=1795456978";
+import { loadSheet, SHEET } from "./sheet.js?v=1795456978";
+import { WEEKLY } from "./weekly.js?v=1795456978";
 
 /* ---------- utils ---------- */
 const $ = (s, el = document) => el.querySelector(s);
