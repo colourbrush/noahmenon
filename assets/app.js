@@ -276,11 +276,11 @@ views[""] = () => {
     setTimeout(typer, del ? 25 : 55); })();
   ask.oninput = () => send.classList.toggle("on", !!ask.value.trim());
   const routes = [[/chess|puzzle|mate|check/, "#/chess", "Loading today's puzzle…"], [/deck|slide|present|club|powerpoint|ppt/, "#/present", "Opening the Club Deck…"], [/grid|link|word|connection/, "#/links", "Today's Link-4 grid…"],
-    [/build|make.*puzzle/, "#/chess/build", "Opening the puzzle builder…"], [/write|edit|own quiz|my quiz/, "#/arcade/edit", "Opening the quiz editor…"], [/econ|elastic|market|inflation|gdp|tariff/, "#/arcade/econ", "Economics deck, go."], [/psych|memory|bias|study|studies/, "#/arcade/psych", "Psychology deck, go."],
-    [/bio|cell|dna|enzyme|photo/, "#/arcade/bio", "Biology deck, go."], [/sport|football|basketball|run|fitness/, "#/arcade/sport", "Sport Lab, go."], [/game|nash|loot|fortnite|pokemon|pokémon/, "#/arcade/game", "Game Theory deck, go."], [/./, "#/arcade/daily", "Running today's Daily Mix…"]];
+    [/build|make.*puzzle/, "#/chess/build", "Opening the puzzle builder…"], [/write|edit|own quiz|my quiz/, "#/arcade/edit", "Opening the quiz editor…"], [/econ|elastic|market|inflation|gdp|tariff|tax|duty|excise|subsid|price|demand|supply|monopol|externalit|unemploy|interest rate|trade|money|fiscal|monetary/, "#/arcade/econ", "Economics deck, go."], [/psych|memory|bias|study|studies/, "#/arcade/psych", "Psychology deck, go."],
+    [/bio|cell|dna|enzyme|photo/, "#/arcade/bio", "Biology deck, go."], [/sport|football|basketball|run|fitness/, "#/arcade/sport", "Sport Lab, go."], [/game|nash|loot|fortnite|pokemon|pokémon/, "#/arcade/game", "Game Theory deck, go."], [/^(daily|mix|quiz me|random|anything|surprise)/, "#/arcade/daily", "Running today's Daily Mix…"], [/./, "#/arcade/daily", "I don't have a deck on that yet, so here's today's Daily Mix instead."]];
   function go2() { const raw = ask.value.trim(), q = raw.toLowerCase(); if (!raw) return; const r = routes.find(([re]) => re.test(q)), th = $("#thread");
     th.replaceChildren(h(`<div class="bubble me"></div>`)); th.firstChild.textContent = raw; ask.value = ""; ask.oninput();
-    setTimeout(() => { th.append(h(`<div class="bubble ai"><b>Oracle</b> · ${esc(r[2])}</div>`)); }, 450); setTimeout(() => go(r[1]), 1500); }
+    setTimeout(() => { th.append(h(`<div class="bubble ai"><b>Oracle</b> · ${esc(r[2])}</div>`)); }, 450); setTimeout(() => go(r[1]), r[2].startsWith("I don") ? 2600 : 1500); }
   send.onclick = go2; ask.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go2(); } };
   v.querySelectorAll(".pill").forEach((b) => b.onclick = () => { ask.value = b.dataset.p; ask.oninput(); ask.focus(); });
   // try-it puzzle
