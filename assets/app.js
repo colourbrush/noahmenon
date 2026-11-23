@@ -15,38 +15,53 @@ function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>>
 function shuffle(a, r = Math.random) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const corners = '<i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i>';
 
-/* ---------- background: living particle field ---------- */
+/* ---------- background: reactive dot field ---------- */
 (function bg() {
-  const c = $("#bg"), x = c.getContext("2d"); let W, H, pts = [], mouse = { x: -999, y: -999 }, t = 0;
-  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function size() { W = c.width = innerWidth * devicePixelRatio; H = c.height = innerHeight * devicePixelRatio; c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px";
-    const n = Math.min(110, Math.floor(innerWidth * innerHeight / 14000));
-    pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .35, vy: (Math.random() - .5) * .35 })); }
-  addEventListener("resize", size); addEventListener("pointermove", (e) => { mouse.x = e.clientX * devicePixelRatio; mouse.y = e.clientY * devicePixelRatio; });
-  size();
+  const c = $("#bg"), x = c.getContext("2d"), dpr = Math.min(2, devicePixelRatio || 1); let W, H, t = 0, mx = -1e4, my = -1e4;
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches, G = 26;
+  const size = () => { W = c.width = innerWidth * dpr; H = c.height = innerHeight * dpr; c.style.width = innerWidth + "px"; c.style.height = innerHeight + "px"; };
+  addEventListener("resize", size); addEventListener("pointermove", (e) => { mx = e.clientX * dpr; my = e.clientY * dpr; }); size();
   function frame() {
-    t += 0.004; x.clearRect(0, 0, W, H);
-    // rotating hex rings
-    const cx = W * 0.5, cy = H * 0.42, R = Math.min(W, H) * 0.34;
-    for (let k = 0; k < 3; k++) {
-      x.beginPath(); const r = R * (0.55 + k * 0.25), rot = t * (k % 2 ? -1 : 1) * (0.6 + k * 0.2);
-      for (let i = 0; i <= 6; i++) { const a = rot + i * Math.PI / 3; const px = cx + r * Math.cos(a), py = cy + r * Math.sin(a) * 0.55; i ? x.lineTo(px, py) : x.moveTo(px, py); }
-      x.strokeStyle = `rgba(${k === 1 ? "180,140,255" : "56,248,200"},${0.07 + 0.03 * Math.sin(t * 3 + k)})`; x.lineWidth = devicePixelRatio; x.stroke();
+    t += 0.01; x.clearRect(0, 0, W, H); const g = G * dpr, R = 150 * dpr;
+    for (let y = g / 2; y < H; y += g) for (let X = g / 2; X < W; X += g) {
+      const dx = X - mx, dy = y - my, d = Math.hypot(dx, dy), k = Math.max(0, 1 - d / R);
+      const wave = 0.5 + 0.5 * Math.sin(X * 0.004 + y * 0.003 + t);
+      const px = X + (d ? dx / d : 0) * k * 10 * dpr, py = y + (d ? dy / d : 0) * k * 10 * dpr;
+      const r = (0.7 + k * 1.8) * dpr; x.fillStyle = k > 0.02 ? `rgba(200,255,77,${0.15 + k * 0.7})` : `rgba(236,235,230,${0.05 + wave * 0.06})`;
+      x.beginPath(); x.arc(px, py, r, 0, 6.283); x.fill();
     }
-    for (const p of pts) {
-      p.x += p.vx * devicePixelRatio; p.y += p.vy * devicePixelRatio;
-      if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1;
-      const dm = Math.hypot(p.x - mouse.x, p.y - mouse.y); if (dm < 140 * devicePixelRatio) { p.x += (p.x - mouse.x) / dm * 0.8; p.y += (p.y - mouse.y) / dm * 0.8; }
-    }
-    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
-      const a = pts[i], b = pts[j], d = Math.hypot(a.x - b.x, a.y - b.y), L = 130 * devicePixelRatio;
-      if (d < L) { x.strokeStyle = `rgba(56,248,200,${(1 - d / L) * 0.22})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
-    }
-    for (const p of pts) { x.fillStyle = "rgba(160,255,230,.7)"; x.fillRect(p.x, p.y, 1.6 * devicePixelRatio, 1.6 * devicePixelRatio); }
     if (!still) requestAnimationFrame(frame);
   }
   frame();
 })();
+
+/* hero sky: slow nebula + stars, camera locked */
+function skyCanvas(cv) {
+  const x = cv.getContext("2d"), dpr = Math.min(2, devicePixelRatio || 1); let W, H, t = 0, stars = [];
+  const blobs = [{ c: [169, 155, 255], x: .25, y: .3, r: .55, s: .7 }, { c: [200, 255, 77], x: .75, y: .35, r: .4, s: 1.1 }, { c: [255, 120, 160], x: .55, y: .7, r: .45, s: .9 }, { c: [80, 140, 255], x: .15, y: .75, r: .5, s: .6 }];
+  function size() { const b = cv.getBoundingClientRect(); W = cv.width = b.width * dpr; H = cv.height = b.height * dpr;
+    stars = Array.from({ length: Math.floor(b.width * b.height / 2600) }, () => ({ x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.2 * dpr + .2, p: Math.random() * 6 })); }
+  size(); const ro = new ResizeObserver(size); ro.observe(cv);
+  (function frame() {
+    if (!cv.isConnected) { ro.disconnect(); return; }
+    t += 0.0025; x.fillStyle = "#07070a"; x.fillRect(0, 0, W, H); x.globalCompositeOperation = "lighter";
+    for (const b of blobs) { const cx = (b.x + Math.sin(t * b.s + b.x * 9) * .06) * W, cy = (b.y + Math.cos(t * b.s * .8 + b.y * 7) * .05) * H, r = b.r * Math.max(W, H);
+      const g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, `rgba(${b.c},.22)`); g.addColorStop(.5, `rgba(${b.c},.07)`); g.addColorStop(1, "rgba(0,0,0,0)");
+      x.fillStyle = g; x.fillRect(0, 0, W, H); }
+    for (const s of stars) { const a = .35 + .65 * (0.5 + 0.5 * Math.sin(t * 20 + s.p)); x.fillStyle = `rgba(255,255,255,${a * .8})`; x.fillRect(s.x, s.y, s.r, s.r); }
+    x.globalCompositeOperation = "source-over";
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) requestAnimationFrame(frame);
+  })();
+}
+function draggable(el) {
+  let sx, sy, ox, oy;
+  el.addEventListener("pointerdown", (e) => { el.setPointerCapture(e.pointerId); sx = e.clientX; sy = e.clientY; ox = el.offsetLeft; oy = el.offsetTop; });
+  el.addEventListener("pointermove", (e) => { if (!el.hasPointerCapture(e.pointerId)) return; el.style.left = ox + e.clientX - sx + "px"; el.style.top = oy + e.clientY - sy + "px"; });
+}
+function reveals(root = document) {
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.12 });
+  root.querySelectorAll(".reveal").forEach((el, i) => { el.style.transitionDelay = (el.dataset.d || 0) + "ms"; io.observe(el); });
+}
 
 /* ---------- HUD ---------- */
 setInterval(() => { $("#clock").textContent = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Tokyo" }); }, 1000);
@@ -133,31 +148,75 @@ const views = {};
 const app = $("#app");
 
 views[""] = () => {
-  const streak = store.get("streak", { n: 0, last: "" });
-  const solved = store.get("solved", {});
-  const pz = PUZZLES[dayIndex() % PUZZLES.length];
+  const streak = store.get("streak", { n: 0, last: "" }), pz = PUZZLES[dayIndex() % PUZZLES.length];
+  const grid = LINKS[dayIndex() % LINKS.length], words = shuffle(grid.flatMap(([, w]) => w), rng(3)).slice(0, 12);
+  const sample = shuffle(Object.entries(DECKS).flatMap(([k, d]) => d.q.map((q) => ({ k, q }))), rng(dayIndex() + 11))[0];
+  const ticker = "ECONOMICS ✦ PSYCHOLOGY ✦ BIOLOGY ✦ CHESS ✦ GAME THEORY ✦ FOOTBALL ✦ BASKETBALL ✦ CROSS-COUNTRY ✦ ";
   const v = h(`<div class="view">
-    <section class="hero">
-      <div class="boot" id="boot"></div>
-      <div class="glitch" data-t="NOAH//MENON">NOAH//MENON</div>
-      <div class="tag">signal station · quizzes · chess · ideas</div>
+    <section class="sky"><canvas></canvas>
+      <span class="sticker w" style="left:9%;top:22%">♞&#xFE0E;</span><span class="sticker b" style="right:11%;top:28%">♛&#xFE0E;</span><span class="sticker w" style="left:16%;bottom:20%">♜&#xFE0E;</span><span class="sticker b" style="right:17%;bottom:24%">♝&#xFE0E;</span>
+      <div class="inner">
+        <div class="kicker">Signal Station · Tokyo · <span id="sclock"></span></div>
+        <h1 class="display">Sharpen the mind.<br><em>Hunt the mate.</em></h1>
+        <p class="lead">Daily IB quizzes, word grids and chess puzzles. Ask the Oracle where to start.</p>
+        <div class="composer"><textarea id="ask" rows="2" aria-label="Ask the Oracle"></textarea>
+          <div class="bar"><button class="pill" data-p="Quiz me on economics">Econ quiz</button><button class="pill" data-p="Give me a chess puzzle">Chess puzzle</button><button class="pill" data-p="Build a club presentation">Club deck</button>
+            <button class="send" id="send" aria-label="Send">↑</button></div></div>
+        <div class="oracle-reply" id="reply"></div>
+      </div>
+      <div class="scrollcue">SCROLL ↓</div>
     </section>
-    <div class="grid g3">
-      <a class="panel portal" href="#/arcade">${corners}<div class="big" style="color:#38f8c8">◈</div><h3>Quiz Arcade</h3><p>Econ, Psych, Bio, Sport, Game Theory and Chess. A fresh Daily Mix every day.</p></a>
-      <a class="panel portal" href="#/chess">${corners}<div class="big" style="color:#4fd6ff">♞</div><h3>Chess Lab</h3><p>Puzzle of the day, plus a puzzle builder that checks every puzzle has a forced mate.</p></a>
-      <a class="panel portal" href="#/present">${corners}<div class="big" style="color:#b48cff">▣</div><h3>Club Deck</h3><p>Build chess-club presentations with live puzzle slides. Present full-screen.</p></a>
-    </div>
-    <div class="grid g3" style="margin-top:16px">
-      <div class="panel">${corners}<h3>Oracle transmission</h3><div class="oracle" id="oracle"></div></div>
-      <div class="panel">${corners}<h3>Daily streak</h3><div class="stat">${streak.n}</div><div class="label">days in a row · Daily Mix</div>
-        <div class="row" style="margin-top:14px"><a class="btn solid" href="#/arcade/daily">Run Daily Mix</a><a class="btn" href="#/links">Link-4</a></div></div>
-      <div class="panel">${corners}<h3>Today's puzzle</h3><div class="stat" style="font-size:22px">${esc(pz.name)}</div><div class="label">mate in ${pz.n} · ${solved[tokyoDate()] ? "solved ✓" : "unsolved"}</div>
-        <div class="row" style="margin-top:14px"><a class="btn solid" href="#/chess">Solve it</a></div></div>
+
+    <section class="tryit reveal" style="margin-top:40px">
+      <div><div class="kicker">Try it now · puzzle of the day</div><h2 class="section" style="margin:12px 0 14px">${esc(pz.name)}<br><em>mate in ${pz.n}.</em></h2>
+        <p style="color:var(--dim);line-height:1.6;max-width:380px">Click a piece, then a square. The Oracle checks every line, so any move that forces mate counts.</p>
+        <div class="row" style="margin-top:20px"><button class="btn" id="th">Hint</button><a class="btn" href="#/chess/all">More puzzles →</a></div></div>
+      <div class="boardwrap"><div id="hb"></div><div class="msg" id="hm"></div></div>
+    </section>
+
+    <div class="marquee"><div><span>${ticker}</span><span>${ticker}</span><span>${ticker}</span><span>${ticker}</span></div></div>
+
+    <div class="kicker reveal">The station</div>
+    <h2 class="section reveal">Everything in one place. <em>Nothing you don't need.</em></h2>
+    <div class="bento">
+      <div class="tilecard glow s2 r2 reveal qmini"><div class="kicker">Daily Mix · ${DECKS[sample.k].name}</div><h3 style="font-size:28px">${esc(sample.q[0])}</h3>
+        <div class="opts" id="mq" style="margin-top:10px">${shuffle(sample.q[1].map((o, j) => j)).map((j) => `<button class="opt" data-j="${j}">${esc(sample.q[1][j])}</button>`).join("")}</div>
+        <div class="why" id="mw" style="display:none"></div><a class="go" href="#/arcade/daily" style="text-decoration:none">RUN TODAY'S 6-QUESTION MIX →</a></div>
+      <a class="tilecard s2 reveal" data-d="80" href="#/links"><div class="kicker">Link-4</div><h3>Four groups. Sixteen words.</h3><p>Today's grid, in the style of NYT Connections.</p><div class="mini4" id="m4">${words.map((w) => `<i>${w}</i>`).join("")}</div></a>
+      <a class="tilecard glow2 reveal" data-d="120" href="#/present"><div class="kicker">Club Deck</div><h3>Present. Export.</h3><div class="mockslide"><b>Back Rank</b><span style="width:70%"></span><span style="width:45%"></span></div><div class="go">⬇ ONE-CLICK POWERPOINT</div></a>
+      <div class="tilecard reveal" data-d="160"><div class="kicker">Streak</div><div class="bignum" style="margin-top:auto">${streak.n}</div><p>days in a row</p></div>
+      <div class="tilecard s2 reveal"><div class="kicker">Oracle transmission</div><div class="oracle" id="oracle" style="margin-top:14px"></div></div>
+      <a class="tilecard reveal" data-d="80" href="#/chess/build"><div class="kicker">Builder</div><h3>Make puzzles.</h3><p>The Oracle checks they really are a forced mate.</p><div class="go">OPEN →</div></a>
+      <a class="tilecard reveal" data-d="140" href="#/arcade/edit"><div class="kicker">Quiz editor</div><h3>Write your own.</h3><p>Copy any deck and change it.</p><div class="go">OPEN →</div></a>
     </div></div>`);
   app.replaceChildren(v);
-  const lines = ["> establishing uplink… ok", "> loading knowledge cores [econ/psych/bio/chess]… ok", "> welcome back, operator."];
-  const boot = $("#boot"); let i = 0; (function next() { if (!boot.isConnected || i >= lines.length) return; boot.textContent += (i ? "\n" : "") + lines[i++]; setTimeout(next, 380); })();
-  typeOut($("#oracle"), ORACLE[dayIndex() % ORACLE.length]);
+  skyCanvas($(".sky canvas", v)); v.querySelectorAll(".sticker").forEach(draggable);
+  const tick = () => { const el = $("#sclock"); if (el) { el.textContent = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }); setTimeout(tick, 20000); } }; tick();
+  // composer with typing placeholder
+  const ask = $("#ask"), send = $("#send"), reply = $("#reply");
+  const prompts = ["Quiz me on price elasticity…", "Give me a mate-in-2…", "Test my psychology studies…", "Make a slide deck for chess club…", "What's today's word grid?"];
+  let pi = 0, ci = 0, del = false;
+  (function typer() { if (!ask.isConnected) return; if (ask.value) { setTimeout(typer, 600); return; }
+    const p = prompts[pi]; ci += del ? -1 : 1; ask.placeholder = p.slice(0, ci);
+    if (!del && ci === p.length) { del = true; return setTimeout(typer, 1600); } if (del && ci === 0) { del = false; pi = (pi + 1) % prompts.length; }
+    setTimeout(typer, del ? 25 : 55); })();
+  ask.oninput = () => send.classList.toggle("on", !!ask.value.trim());
+  const routes = [[/chess|puzzle|mate|check/, "#/chess", "Loading today's puzzle…"], [/deck|slide|present|club|powerpoint|ppt/, "#/present", "Opening the Club Deck…"], [/grid|link|word|connection/, "#/links", "Today's Link-4 grid…"],
+    [/build|make.*puzzle/, "#/chess/build", "Opening the puzzle builder…"], [/write|edit|own quiz|my quiz/, "#/arcade/edit", "Opening the quiz editor…"], [/econ|elastic|market|inflation|gdp|tariff/, "#/arcade/econ", "Economics deck, go."], [/psych|memory|bias|study|studies/, "#/arcade/psych", "Psychology deck, go."],
+    [/bio|cell|dna|enzyme|photo/, "#/arcade/bio", "Biology deck, go."], [/sport|football|basketball|run|fitness/, "#/arcade/sport", "Sport Lab, go."], [/game|nash|loot|fortnite|pokemon|pokémon/, "#/arcade/game", "Game Theory deck, go."], [/./, "#/arcade/daily", "Running today's Daily Mix…"]];
+  function go2() { const q = ask.value.trim().toLowerCase(); if (!q) return; const r = routes.find(([re]) => re.test(q)); reply.textContent = "◆ " + r[2]; setTimeout(() => go(r[1]), 650); }
+  send.onclick = go2; ask.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go2(); } };
+  v.querySelectorAll(".pill").forEach((b) => b.onclick = () => { ask.value = b.dataset.p; ask.oninput(); ask.focus(); });
+  // try-it puzzle
+  const pl = PuzzlePlayer($("#hb"), $("#hm"), pz, () => { const s = store.get("solved", {}); s[tokyoDate()] = 1; store.set("solved", s); }); $("#th").onclick = () => pl.hint();
+  // mini quiz
+  let done = false; v.querySelectorAll("#mq .opt").forEach((b) => b.onclick = () => { if (done) return; done = true; const j = +b.dataset.j;
+    v.querySelectorAll("#mq .opt").forEach((o) => { if (+o.dataset.j === sample.q[2]) o.classList.add("ok"); else if (o === b) o.classList.add("bad"); });
+    const w = $("#mw"); w.style.display = "block"; w.textContent = (j === sample.q[2] ? "✓ " : "✗ ") + sample.q[3]; });
+  // link-4 shimmer
+  const tiles = [...v.querySelectorAll("#m4 i")]; let k = 0; const lit = setInterval(() => { if (!v.isConnected) return clearInterval(lit); tiles.forEach((t) => t.classList.remove("g")); for (let i = 0; i < 4; i++) tiles[(k + i * 3) % tiles.length].classList.add("g"); k++; }, 1400);
+  const orc = $("#oracle"); const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) { typeOut(orc, ORACLE[dayIndex() % ORACLE.length]); io.disconnect(); } }); io.observe(orc);
+  reveals(v);
 };
 
 /* Quiz Arcade */
@@ -503,5 +562,6 @@ function route() {
   const q = new URLSearchParams(qs || "");
   document.querySelectorAll("nav a").forEach((a) => a.classList.toggle("on", a.dataset.r === (top || "")));
   (views[top] || views[""])(sub, q); scrollTo(0, 0);
+  if (top) { app.querySelectorAll(".panel, .grid > .portal").forEach((p, i) => { p.classList.add("reveal"); p.dataset.d = Math.min(i, 6) * 60; }); reveals(app); }
 }
 addEventListener("hashchange", route); route();
