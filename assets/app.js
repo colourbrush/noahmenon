@@ -270,7 +270,7 @@ views[""] = () => {
   const tick = () => { const el = $("#sclock"); if (el) { el.textContent = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }); setTimeout(tick, 20000); } }; tick();
   // composer with typing placeholder
   const ask = $("#ask"), send = $("#send");
-  const prompts = ["Quiz me on price elasticity…", "Give me a mate-in-2…", "Test my psychology studies…", "Make a slide deck for chess club…", "What's today's word grid?"];
+  const prompts = ["Quiz me on excise duty…", "Quiz me on F1 tyre strategy…", "Quiz me on price elasticity…", "Give me a mate-in-2…", "Test my psychology studies…", "Make a slide deck for chess club…", "What's today's word grid?"];
   let pi = 0, ci = 0, del = false;
   (function typer() { if (!ask.isConnected) return; if (ask.value) { setTimeout(typer, 600); return; }
     const p = prompts[pi]; ci += del ? -1 : 1; ask.placeholder = p.slice(0, ci);
@@ -280,7 +280,11 @@ views[""] = () => {
   const routes = [[/chess|puzzle|mate|check/, "#/chess", "Loading today's puzzle…"], [/deck|slide|present|club|powerpoint|ppt/, "#/present", "Opening the Club Deck…"], [/grid|link|word|connection/, "#/links", "Today's Link-4 grid…"],
     [/build|make.*puzzle/, "#/chess/build", "Opening the puzzle builder…"], [/write|edit|own quiz|my quiz/, "#/arcade/edit", "Opening the quiz editor…"], [/econ|elastic|market|inflation|gdp|tariff|tax|duty|excise|subsid|price|demand|supply|monopol|externalit|unemploy|interest rate|trade|money|fiscal|monetary/, "#/arcade/econ", "Economics deck, go."], [/psych|memory|bias|study|studies/, "#/arcade/psych", "Psychology deck, go."],
     [/bio|cell|dna|enzyme|photo/, "#/arcade/bio", "Biology deck, go."], [/sport|football|basketball|run|fitness/, "#/arcade/sport", "Sport Lab, go."], [/game|nash|loot|fortnite|pokemon|pokémon/, "#/arcade/game", "Game Theory deck, go."], [/^(daily|mix|quiz me|random|anything|surprise)/, "#/arcade/daily", "Running today's Daily Mix…"], [/./, "#/arcade/daily", "I don't have a deck on that yet, so here's today's Daily Mix instead."]];
-  function go2() { const raw = ask.value.trim(), q = raw.toLowerCase(); if (!raw) return; const r = routes.find(([re]) => re.test(q)), th = $("#thread");
+  function go2() { const raw = ask.value.trim(), q = raw.toLowerCase(); if (!raw) return; const th = $("#thread");
+    const m = raw.match(/^(?:quiz|test|ask)\s+me\s+(?:on|about)\s+(.{2,80})$/i) || raw.match(/^(?:make|give)\s+(?:me\s+)?a\s+quiz\s+(?:on|about)\s+(.{2,80})$/i);
+    if (m) { th.replaceChildren(h(`<div class="bubble me"></div>`)); th.firstChild.textContent = raw; ask.value = ""; ask.oninput();
+      setTimeout(() => th.append(h(`<div class="bubble ai"><b>Oracle</b> · Writing a fresh quiz on ${esc(m[1])}…</div>`)), 400); setTimeout(() => runAIQuiz(m[1].replace(/[?.!]+$/, "")), 1200); return; }
+    const r = routes.find(([re]) => re.test(q));
     th.replaceChildren(h(`<div class="bubble me"></div>`)); th.firstChild.textContent = raw; ask.value = ""; ask.oninput();
     setTimeout(() => { th.append(h(`<div class="bubble ai"><b>Oracle</b> · ${esc(r[2])}</div>`)); }, 450); setTimeout(() => go(r[1]), r[2].startsWith("I don") ? 2600 : 1500); }
   send.onclick = go2; ask.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go2(); } };
@@ -318,9 +322,21 @@ views["arcade"] = (sub) => {
   for (const [k, d] of Object.entries(getDecks())) decks.append(h(`<a class="panel portal deck" href="#/arcade/${k}">${corners}<div class="big" style="color:${d.color}">${d.icon}</div><h3>${d.name}</h3><p>${d.q.length} questions</p><div class="label">best ${best[k] ?? "-"}</div></a>`));
   app.replaceChildren(v);
 };
-function runQuiz(deck) {
+const ORACLE_URL = "https://tight-wave-90f9.gbqbxzjj6p.workers.dev/";
+async function runAIQuiz(topic) {
+  const v = h(`<div class="view"><div class="panel qcard"><div class="kicker">Oracle · AI quiz</div><h2 class="title" style="font-size:44px">${esc(topic)}</h2><p class="msg" id="aim">Writing 5 questions… this takes about 10 seconds.</p><div class="timer"><i id="aib" style="width:0;transition:width 12s linear"></i></div></div></div>`);
+  app.replaceChildren(v); requestAnimationFrame(() => $("#aib").style.width = "95%");
+  try {
+    const r = await fetch(ORACLE_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topic }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || "Oracle offline");
+    const qs = j.questions.map((x) => ({ deck: "ai", q: x.q, opts: [x.correct, ...x.wrong], ans: 0, why: x.why }));
+    runQuiz("ai", qs, { topic, model: j.model });
+  } catch (e) { $("#aim").className = "msg bad"; $("#aim").innerHTML = esc(e.message) + ' <a href="#/arcade">Built-in decks →</a>'; }
+}
+function runQuiz(deck, custom, meta) {
   let qs;
-  const D = getDecks(), AQ = allQ();
+  const D = { ...getDecks(), ai: { name: "Oracle AI", icon: "✦", color: "#ff9f5a", q: [] } }, AQ = allQ();
+  if (custom) qs = custom; else
   if (deck === "daily") qs = shuffle(AQ.filter((q) => DECKS[q.deck]), rng(dayIndex())).slice(0, 6);
   else if (D[deck] && D[deck].q.length) qs = shuffle(AQ.filter((q) => q.deck === deck)).slice(0, 10);
   else return go("#/arcade");
@@ -330,7 +346,7 @@ function runQuiz(deck) {
   function show() {
     const q = qs[i], d = D[q.deck], order = shuffle(q.opts.map((o, j) => j));
     qa.innerHTML = `<div class="qmeta"><span style="color:${d.color}">${d.icon} ${d.name}</span><span>${i + 1}/${qs.length} · ${score} pts</span></div><div class="timer"><i style="width:100%"></i></div>
-      <p class="q">${esc(q.q)}</p><div class="opts">${order.map((j) => `<button class="opt" data-j="${j}">${esc(q.opts[j])}</button>`).join("")}</div><div id="after"></div>`;
+      ${meta ? `<div class="label" style="margin:-8px 0 14px;color:var(--warm)">AI-generated (${esc(meta.model.split("/").pop())}) · it can be wrong · spot a mistake? flag it</div>` : ""}<p class="q">${esc(q.q)}</p><div class="opts">${order.map((j) => `<button class="opt" data-j="${j}">${esc(q.opts[j])}</button>`).join("")}</div><div id="after"></div>`;
     const bar = $(".timer i", qa), t0 = Date.now(), T = 20000;
     clearInterval(timer); timer = setInterval(() => { const left = Math.max(0, 1 - (Date.now() - t0) / T); bar.style.width = left * 100 + "%"; if (!left) answer(-1); }, 100);
     let done = false;
@@ -339,18 +355,22 @@ function runQuiz(deck) {
       if (done) return; done = true; clearInterval(timer);
       const ok = j === q.ans, pts = ok ? 100 + Math.round(100 * Math.max(0, 1 - (Date.now() - t0) / T)) : 0; score += pts; if (ok) right++;
       qa.querySelectorAll(".opt").forEach((b) => { const k = +b.dataset.j; if (k === q.ans) b.classList.add("ok"); else if (k === j) b.classList.add("bad"); b.disabled = true; });
-      $("#after", qa).innerHTML = `<div class="why">${ok ? "✓ +" + pts : j < 0 ? "⌛ Time's up" : "✗ Not quite"} · ${esc(q.why)}</div><div class="row" style="margin-top:16px"><button class="btn solid" id="nx">${i + 1 < qs.length ? "Next →" : "Results"}</button></div>`;
+      $("#after", qa).innerHTML = `<div class="why">${ok ? "✓ +" + pts : j < 0 ? "⌛ Time's up" : "✗ Not quite"} · ${esc(q.why)}</div><div class="row" style="margin-top:16px"><button class="btn solid" id="nx">${i + 1 < qs.length ? "Next →" : "Results"}</button>${meta ? '<button class="btn" id="fl">⚑ The AI got this wrong</button>' : ""}</div>`;
+      if (meta) $("#fl", qa).onclick = (e) => { q.flagged = true; const c = store.get("aiCaught", 0) + 1; store.set("aiCaught", c); e.target.disabled = true; e.target.textContent = `Flagged · ${c} AI mistakes caught so far`; };
       $("#nx", qa).onclick = () => { i++; i < qs.length ? show() : end(); }; $("#nx", qa).focus();
     }
   }
   function end() {
-    const best = store.get("best", {}); const nb = score > (best[deck] ?? 0); if (nb) { best[deck] = score; store.set("best", best); }
+    const best = store.get("best", {}); const nb = !custom && score > (best[deck] ?? 0); if (nb) { best[deck] = score; store.set("best", best); }
     if (deck === "daily") { mission("mix"); const s = store.get("streak", { n: 0, last: "" }), today = tokyoDate(), y = new Date(Date.now() + 9 * 3600e3 - 86400e3).toISOString().slice(0, 10);
       if (s.last !== today) { s.n = s.last === y ? s.n + 1 : 1; s.last = today; store.set("streak", s); } }
     qa.innerHTML = `<div class="label" style="text-align:center">transmission complete</div><div class="score">${score}</div>
       <p style="text-align:center">${right}/${qs.length} correct${nb ? " · NEW BEST" : ""}</p>
-      <div class="row" style="justify-content:center"><button class="btn solid" id="again">Run again</button><a class="btn" href="#/arcade">All decks</a></div>`;
-    $("#again", qa).onclick = () => runQuiz(deck);
+      <div class="row" style="justify-content:center"><button class="btn solid" id="again">Run again</button><a class="btn" href="#/arcade">All decks</a>${meta ? '<button class="btn" id="keep">Save to my drafts to fix</button>' : ""}</div>
+      ${meta ? `<p class="label" style="text-align:center;margin-top:14px">${qs.filter((x) => x.flagged).length} flagged. Fix them in the Quiz Editor, then copy the rows to the Sheet.</p>` : ""}`;
+    $("#again", qa).onclick = () => meta ? runAIQuiz(meta.topic) : runQuiz(deck);
+    if (meta) $("#keep", qa).onclick = () => { const my = store.get("mydecks", {}), id = "my" + Date.now().toString(36);
+      my[id] = { name: meta.topic, icon: "✦", color: "#ff9f5a", q: qs.map((x) => [(x.flagged ? "[CHECK] " : "") + x.q, x.opts.slice(), x.ans, x.why]) }; store.set("mydecks", my); go("#/arcade/edit"); };
   }
   show();
 }
