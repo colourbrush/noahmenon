@@ -53,6 +53,69 @@ function skyCanvas(cv) {
     if (!matchMedia("(prefers-reduced-motion: reduce)").matches) requestAnimationFrame(frame);
   })();
 }
+
+/* hero shader: endless chessboard to the horizon (GPU), mouse-reactive light, film grain */
+function shaderSky(cv) {
+  const gl = cv.getContext("webgl", { antialias: false, premultipliedAlpha: false });
+  if (!gl) return skyCanvas(cv);
+  const vs = "attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}";
+  const fs = `precision highp float;uniform vec2 r;uniform float t;uniform vec2 m;
+  float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  void main(){vec2 uv=(gl_FragCoord.xy-.5*r)/r.y;float hz=-.02+m.y*.02;vec3 col;
+    vec3 lime=vec3(.784,1.,.302),warm=vec3(1.,.62,.35);
+    vec2 sun=vec2(m.x*.18,hz+.06);float sd=length((uv-sun)*vec2(1.,1.6));
+    if(uv.y>hz){float sky=uv.y-hz;col=mix(vec3(.10,.07,.05),vec3(.02,.02,.025),smoothstep(0.,.45,sky));
+      col+=warm*.55*exp(-sd*5.5)+lime*.18*exp(-sd*14.);
+      vec2 g=floor(gl_FragCoord.xy/2.);float st=step(.9975,h(g));col+=st*(.5+.5*sin(t*2.+h(g)*40.))*smoothstep(.05,.3,sky);}
+    else{float d=.32/(hz-uv.y+.0001);vec2 w=vec2((uv.x-m.x*.05)*d,d+t*.18);vec2 c=floor(w);float chk=mod(c.x+c.y,2.);
+      vec2 f=abs(fract(w)-.5);float line=smoothstep(.47,.5,max(f.x,f.y));float fog=exp(-d*.16);
+      col=mix(vec3(.035),vec3(.085,.085,.09),chk)*fog;col+=lime*line*fog*.55;
+      col+=warm*.35*exp(-abs(uv.x-sun.x)*3.)*fog*fog*smoothstep(0.,.25,1.-d*.1);
+      col+=lime*.08*exp(-length(uv-m*vec2(.9,.5))*3.)*fog;}
+    col+=warm*.25*exp(-abs(uv.y-hz)*60.);
+    col+=(h(gl_FragCoord.xy+t)-.5)*.05;col*=1.-.35*length(uv*vec2(.8,1.1));
+    gl_FragColor=vec4(col,1.);}`;
+  const sh = (type, src) => { const o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+  const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return skyCanvas(cv);
+  gl.useProgram(pr); const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, "p"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const uR = gl.getUniformLocation(pr, "r"), uT = gl.getUniformLocation(pr, "t"), uM = gl.getUniformLocation(pr, "m");
+  const dpr = Math.min(1.5, devicePixelRatio || 1); let mx = 0, my = 0, tx = 0, ty = 0;
+  const size = () => { const r = cv.getBoundingClientRect(); cv.width = r.width * dpr; cv.height = r.height * dpr; gl.viewport(0, 0, cv.width, cv.height); };
+  size(); const ro = new ResizeObserver(size); ro.observe(cv);
+  const mv = (e) => { const r = cv.getBoundingClientRect(); tx = (e.clientX - r.left) / r.width * 2 - 1; ty = -((e.clientY - r.top) / r.height * 2 - 1); };
+  addEventListener("pointermove", mv);
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches, t0 = performance.now();
+  (function frame() {
+    if (!cv.isConnected) { ro.disconnect(); removeEventListener("pointermove", mv); return; }
+    mx += (tx - mx) * .05; my += (ty - my) * .05;
+    gl.uniform2f(uR, cv.width, cv.height); gl.uniform1f(uT, still ? 0 : (performance.now() - t0) / 1000); gl.uniform2f(uM, mx, my);
+    gl.drawArrays(gl.TRIANGLES, 0, 3); if (!still) requestAnimationFrame(frame);
+  })();
+}
+function splitWords(el, base = 0, step = 90) {
+  const walk = (node) => { for (const n of [...node.childNodes]) {
+    if (n.nodeType === 3) { const f = document.createDocumentFragment(); n.textContent.split(/(\s+)/).forEach((w) => { if (!w) return; if (/^\s+$/.test(w)) f.append(w); else { const sp = document.createElement("span"); sp.className = "w"; sp.textContent = w; f.append(sp); } }); n.replaceWith(f); }
+    else if (n.nodeType === 1 && n.tagName !== "BR") walk(n); } };
+  walk(el); el.classList.add("split"); el.querySelectorAll(".w").forEach((w, i) => w.style.animationDelay = base + i * step + "ms");
+}
+function mission(k) { const m = store.get("missions", {}); if (!m[k]) { m[k] = tokyoDate(); store.set("missions", m); } }
+(function cursor() {
+  if (!matchMedia("(pointer:fine)").matches || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  document.body.classList.add("cc"); const d = h('<div class="cur-dot"></div>'), r = h('<div class="cur-ring"></div>'); document.body.append(d, r);
+  let x = innerWidth / 2, y = innerHeight / 2, rx = x, ry = y;
+  addEventListener("pointermove", (e) => { x = e.clientX; y = e.clientY; d.style.transform = `translate(${x}px,${y}px) translate(-50%,-50%)`;
+    const t = e.target.closest("a,button,.opt,.sq,.tile,.sticker,textarea,input,select"); r.classList.toggle("big", !!t && !t.matches("textarea,input,select"));
+    r.dataset.l = t ? (t.matches(".sticker") ? "DRAG" : t.matches(".sq") ? "MOVE" : t.matches("a") ? "OPEN" : "") : ""; });
+  (function loop() { rx += (x - rx) * .18; ry += (y - ry) * .18; r.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`; requestAnimationFrame(loop); })();
+})();
+(function intro() {
+  let seen = false; try { seen = sessionStorage.getItem("noah.intro"); sessionStorage.setItem("noah.intro", "1"); } catch {}
+  if (seen || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const l = h('<div class="loader"><div class="n">0</div><div class="t">ACQUIRING SIGNAL</div></div>'); document.body.append(l);
+  let n = 0; const iv = setInterval(() => { n = Math.min(100, n + Math.ceil(Math.random() * 14)); $(".n", l).textContent = n; if (n >= 100) { clearInterval(iv); $(".t", l).textContent = "SIGNAL LOCKED"; setTimeout(() => { l.classList.add("out"); setTimeout(() => l.remove(), 950); }, 250); } }, 60);
+})();
 function draggable(el) {
   let sx, sy, ox, oy;
   el.addEventListener("pointerdown", (e) => { el.setPointerCapture(e.pointerId); sx = e.clientX; sy = e.clientY; ox = el.offsetLeft; oy = el.offsetTop; });
@@ -157,12 +220,12 @@ views[""] = () => {
       <span class="sticker w" style="left:9%;top:22%">♞&#xFE0E;</span><span class="sticker b" style="right:11%;top:28%">♛&#xFE0E;</span><span class="sticker w" style="left:16%;bottom:20%">♜&#xFE0E;</span><span class="sticker b" style="right:17%;bottom:24%">♝&#xFE0E;</span>
       <div class="inner">
         <div class="kicker">Signal Station · Tokyo · <span id="sclock"></span></div>
-        <h1 class="display">Sharpen the mind.<br><em>Hunt the mate.</em></h1>
+        <h1 class="display" id="hl">Sharpen the mind.<br><em>Own the board.</em></h1>
         <p class="lead">Daily IB quizzes, word grids and chess puzzles. Ask the Oracle where to start.</p>
-        <div class="composer"><textarea id="ask" rows="2" aria-label="Ask the Oracle"></textarea>
+        <div class="thread" id="thread"></div><div class="composer"><textarea id="ask" rows="2" aria-label="Ask the Oracle"></textarea>
           <div class="bar"><button class="pill" data-p="Quiz me on economics">Econ quiz</button><button class="pill" data-p="Give me a chess puzzle">Chess puzzle</button><button class="pill" data-p="Build a club presentation">Club deck</button>
             <button class="send" id="send" aria-label="Send">↑</button></div></div>
-        <div class="oracle-reply" id="reply"></div>
+        <div class="missions" id="ms"></div><div class="mbar"><i id="mb" style="width:0"></i></div>
       </div>
       <div class="scrollcue">SCROLL ↓</div>
     </section>
@@ -172,6 +235,17 @@ views[""] = () => {
         <p style="color:var(--dim);line-height:1.6;max-width:380px">Click a piece, then a square. The Oracle checks every line, so any move that forces mate counts.</p>
         <div class="row" style="margin-top:20px"><button class="btn" id="th">Hint</button><a class="btn" href="#/chess/all">More puzzles →</a></div></div>
       <div class="boardwrap"><div id="hb"></div><div class="msg" id="hm"></div></div>
+    </section>
+
+    <section class="story">
+      <div class="stick reveal"><div class="kicker">A week at the station</div><h2 class="section" style="margin-top:12px">Small reps.<br><em>Every day.</em></h2>
+        <p style="color:var(--dim);line-height:1.6;max-width:380px">Five minutes a day beats a three-hour cram. The station gives you a reason to show up.</p></div>
+      <div class="steps">
+        <div class="step"><div class="d">MON–FRI · 2 MIN</div><h4>Daily Mix</h4><p>Six questions across Econ, Psych, Bio, sport and game theory. Explanations after every answer. Keep the streak alive.</p></div>
+        <div class="step"><div class="d">EVERY DAY · 3 MIN</div><h4>Puzzle of the day</h4><p>A forced mate, checked by the Oracle. Any winning line counts, so think instead of memorising.</p></div>
+        <div class="step"><div class="d">CLUB DAY</div><h4>Build the session</h4><p>Make puzzles, drop them into a deck, present them full-screen, or export to PowerPoint in one click.</p></div>
+        <div class="step"><div class="d">SATURDAY</div><h4>New signal drops</h4><p>Fresh questions, puzzles, a new Link-4 grid and Oracle tips land automatically every week.</p></div>
+      </div>
     </section>
 
     <div class="marquee"><div><span>${ticker}</span><span>${ticker}</span><span>${ticker}</span><span>${ticker}</span></div></div>
@@ -186,14 +260,14 @@ views[""] = () => {
       <a class="tilecard glow2 reveal" data-d="120" href="#/present"><div class="kicker">Club Deck</div><h3>Present. Export.</h3><div class="mockslide"><b>Back Rank</b><span style="width:70%"></span><span style="width:45%"></span></div><div class="go">⬇ ONE-CLICK POWERPOINT</div></a>
       <div class="tilecard reveal" data-d="160"><div class="kicker">Streak</div><div class="bignum" style="margin-top:auto">${streak.n}</div><p>days in a row</p></div>
       <div class="tilecard s2 reveal"><div class="kicker">Oracle transmission</div><div class="oracle" id="oracle" style="margin-top:14px"></div></div>
-      <a class="tilecard reveal" data-d="80" href="#/chess/build"><div class="kicker">Builder</div><h3>Make puzzles.</h3><p>The Oracle checks they really are a forced mate.</p><div class="go">OPEN →</div></a>
-      <a class="tilecard reveal" data-d="140" href="#/arcade/edit"><div class="kicker">Quiz editor</div><h3>Write your own.</h3><p>Copy any deck and change it.</p><div class="go">OPEN →</div></a>
+      <a class="tilecard reveal" data-d="80" href="#/chess/build"><div class="kicker">Builder</div><h3>Make puzzles.</h3><p>The Oracle checks they really are a forced mate.</p><div class="more">Set up a position, pick mate-in-1 to 3, verify, share the link.</div><div class="go">OPEN <span>→</span></div></a>
+      <a class="tilecard reveal" data-d="140" href="#/arcade/edit"><div class="kicker">Quiz editor</div><h3>Write your own.</h3><p>Copy any deck and change it.</p><div class="more">Questions, answers, explanations, colour and icon: all yours.</div><div class="go">OPEN <span>→</span></div></a>
     </div></div>`);
   app.replaceChildren(v);
-  skyCanvas($(".sky canvas", v)); v.querySelectorAll(".sticker").forEach(draggable);
+  shaderSky($(".sky canvas", v)); v.querySelectorAll(".sticker").forEach(draggable);
   const tick = () => { const el = $("#sclock"); if (el) { el.textContent = new Date().toLocaleTimeString("en-GB", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }); setTimeout(tick, 20000); } }; tick();
   // composer with typing placeholder
-  const ask = $("#ask"), send = $("#send"), reply = $("#reply");
+  const ask = $("#ask"), send = $("#send");
   const prompts = ["Quiz me on price elasticity…", "Give me a mate-in-2…", "Test my psychology studies…", "Make a slide deck for chess club…", "What's today's word grid?"];
   let pi = 0, ci = 0, del = false;
   (function typer() { if (!ask.isConnected) return; if (ask.value) { setTimeout(typer, 600); return; }
@@ -204,11 +278,13 @@ views[""] = () => {
   const routes = [[/chess|puzzle|mate|check/, "#/chess", "Loading today's puzzle…"], [/deck|slide|present|club|powerpoint|ppt/, "#/present", "Opening the Club Deck…"], [/grid|link|word|connection/, "#/links", "Today's Link-4 grid…"],
     [/build|make.*puzzle/, "#/chess/build", "Opening the puzzle builder…"], [/write|edit|own quiz|my quiz/, "#/arcade/edit", "Opening the quiz editor…"], [/econ|elastic|market|inflation|gdp|tariff/, "#/arcade/econ", "Economics deck, go."], [/psych|memory|bias|study|studies/, "#/arcade/psych", "Psychology deck, go."],
     [/bio|cell|dna|enzyme|photo/, "#/arcade/bio", "Biology deck, go."], [/sport|football|basketball|run|fitness/, "#/arcade/sport", "Sport Lab, go."], [/game|nash|loot|fortnite|pokemon|pokémon/, "#/arcade/game", "Game Theory deck, go."], [/./, "#/arcade/daily", "Running today's Daily Mix…"]];
-  function go2() { const q = ask.value.trim().toLowerCase(); if (!q) return; const r = routes.find(([re]) => re.test(q)); reply.textContent = "◆ " + r[2]; setTimeout(() => go(r[1]), 650); }
+  function go2() { const raw = ask.value.trim(), q = raw.toLowerCase(); if (!raw) return; const r = routes.find(([re]) => re.test(q)), th = $("#thread");
+    th.replaceChildren(h(`<div class="bubble me"></div>`)); th.firstChild.textContent = raw; ask.value = ""; ask.oninput();
+    setTimeout(() => { th.append(h(`<div class="bubble ai"><b>Oracle</b> · ${esc(r[2])}</div>`)); }, 450); setTimeout(() => go(r[1]), 1500); }
   send.onclick = go2; ask.onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go2(); } };
   v.querySelectorAll(".pill").forEach((b) => b.onclick = () => { ask.value = b.dataset.p; ask.oninput(); ask.focus(); });
   // try-it puzzle
-  const pl = PuzzlePlayer($("#hb"), $("#hm"), pz, () => { const s = store.get("solved", {}); s[tokyoDate()] = 1; store.set("solved", s); }); $("#th").onclick = () => pl.hint();
+  const pl = PuzzlePlayer($("#hb"), $("#hm"), pz, () => { const s = store.get("solved", {}); s[tokyoDate()] = 1; store.set("solved", s); mission("puzzle"); }); $("#th").onclick = () => pl.hint();
   // mini quiz
   let done = false; v.querySelectorAll("#mq .opt").forEach((b) => b.onclick = () => { if (done) return; done = true; const j = +b.dataset.j;
     v.querySelectorAll("#mq .opt").forEach((o) => { if (+o.dataset.j === sample.q[2]) o.classList.add("ok"); else if (o === b) o.classList.add("bad"); });
@@ -216,6 +292,12 @@ views[""] = () => {
   // link-4 shimmer
   const tiles = [...v.querySelectorAll("#m4 i")]; let k = 0; const lit = setInterval(() => { if (!v.isConnected) return clearInterval(lit); tiles.forEach((t) => t.classList.remove("g")); for (let i = 0; i < 4; i++) tiles[(k + i * 3) % tiles.length].classList.add("g"); k++; }, 1400);
   const orc = $("#oracle"); const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) { typeOut(orc, ORACLE[dayIndex() % ORACLE.length]); io.disconnect(); } }); io.observe(orc);
+  const ms = store.get("missions", {}), ML = [["puzzle", "Solve a puzzle", "#/chess"], ["mix", "Run the Daily Mix", "#/arcade/daily"], ["links", "Clear a Link-4", "#/links"]];
+  $("#ms").innerHTML = ML.map(([k, t, u]) => `<a class="mission ${ms[k] ? "done" : ""}" href="${u}"><i class="ck">${ms[k] ? "✓" : ""}</i><span>${t}</span></a>`).join("");
+  setTimeout(() => { const el = $("#mb"); if (el) el.style.width = ML.filter(([k]) => ms[k]).length / 3 * 100 + "%"; }, 400);
+  splitWords($("#hl"), 150); const lead = $(".sky .lead"); lead.style.opacity = 0; setTimeout(() => { lead.style.transition = "opacity 1s"; lead.style.opacity = 1; }, 900);
+  const sio = new IntersectionObserver((es) => es.forEach((e) => e.target.classList.toggle("on", e.isIntersecting)), { rootMargin: "-40% 0px -40% 0px" });
+  v.querySelectorAll(".story .step").forEach((st) => sio.observe(st));
   reveals(v);
 };
 
@@ -261,7 +343,7 @@ function runQuiz(deck) {
   }
   function end() {
     const best = store.get("best", {}); const nb = score > (best[deck] ?? 0); if (nb) { best[deck] = score; store.set("best", best); }
-    if (deck === "daily") { const s = store.get("streak", { n: 0, last: "" }), today = tokyoDate(), y = new Date(Date.now() + 9 * 3600e3 - 86400e3).toISOString().slice(0, 10);
+    if (deck === "daily") { mission("mix"); const s = store.get("streak", { n: 0, last: "" }), today = tokyoDate(), y = new Date(Date.now() + 9 * 3600e3 - 86400e3).toISOString().slice(0, 10);
       if (s.last !== today) { s.n = s.last === y ? s.n + 1 : 1; s.last = today; store.set("streak", s); } }
     qa.innerHTML = `<div class="label" style="text-align:center">transmission complete</div><div class="score">${score}</div>
       <p style="text-align:center">${right}/${qs.length} correct${nb ? " · NEW BEST" : ""}</p>
@@ -341,7 +423,7 @@ views["links"] = () => {
   $("#sb", v).onclick = () => {
     if (sel.size !== 4 || !lives) return;
     const g = grid.findIndex(([, w]) => w.every((x) => sel.has(x)));
-    if (g >= 0) { solved.push(g); words = words.filter((w) => !sel.has(w)); sel.clear(); msg.className = "msg good"; msg.textContent = solved.length === 4 ? "GRID CLEARED." : "Group locked in."; }
+    if (g >= 0) { solved.push(g); words = words.filter((w) => !sel.has(w)); sel.clear(); msg.className = "msg good"; msg.textContent = solved.length === 4 ? "GRID CLEARED." : "Group locked in."; if (solved.length === 4) mission("links"); }
     else { const close = grid.some(([, w]) => w.filter((x) => sel.has(x)).length === 3); lives--; msg.className = "msg bad"; msg.textContent = close ? "One away…" : "Not a group.";
       if (!lives) { msg.textContent = "Out of attempts. Here are the answers."; grid.forEach((_, k) => { if (!solved.includes(k)) solved.push(k); }); words = []; } }
     draw();
@@ -368,7 +450,7 @@ views["chess"] = (sub, q) => {
   let player;
   function load(pz) {
     cur = pz; $("#pn").textContent = pz.name; $("#ph").textContent = `mate in ${pz.n}`;
-    player = PuzzlePlayer($("#bd"), $("#pm"), pz, () => { if (pz === PUZZLES[dayIndex() % PUZZLES.length]) { const s = store.get("solved", {}); s[tokyoDate()] = 1; store.set("solved", s); } });
+    player = PuzzlePlayer($("#bd"), $("#pm"), pz, () => { mission("puzzle"); if (pz === PUZZLES[dayIndex() % PUZZLES.length]) { const s = store.get("solved", {}); s[tokyoDate()] = 1; store.set("solved", s); } });
   }
   $("#hint").onclick = () => player.hint(); $("#rev").onclick = () => player.reveal(); $("#rst").onclick = () => player.reset();
   $("#add").onclick = () => { addSlide({ type: "board", title: cur.name, text: cur.hint || "", fen: cur.fen, n: cur.n }); $("#pm").className = "msg good"; $("#pm").textContent = "Added to Club Deck."; };
@@ -561,7 +643,9 @@ function route() {
   const raw = location.hash.replace(/^#\/?/, ""); const [path, qs] = raw.split("?"); const [top, sub] = path.split("/");
   const q = new URLSearchParams(qs || "");
   document.querySelectorAll("nav a").forEach((a) => a.classList.toggle("on", a.dataset.r === (top || "")));
-  (views[top] || views[""])(sub, q); scrollTo(0, 0);
-  if (top) { app.querySelectorAll(".panel, .grid > .portal").forEach((p, i) => { p.classList.add("reveal"); p.dataset.d = Math.min(i, 6) * 60; }); reveals(app); }
+  const render = () => { (views[top] || views[""])(sub, q); scrollTo(0, 0);
+    if (top) { app.querySelectorAll(".panel, .grid > .portal").forEach((p, i) => { p.classList.add("reveal"); p.dataset.d = Math.min(i, 6) * 60; }); reveals(app); } };
+  if (document.startViewTransition && route.ran && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(render); else render();
+  route.ran = true;
 }
 addEventListener("hashchange", route); route();
