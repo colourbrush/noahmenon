@@ -1,5 +1,7 @@
 import { Chess, validateFen } from "../vendor/chess.js";
 import { DECKS, LINKS, PUZZLES, ORACLE, UPDATED } from "./data.js";
+import { loadSheet, SHEET } from "./sheet.js";
+import { WEEKLY } from "./weekly.js";
 
 /* ---------- utils ---------- */
 const $ = (s, el = document) => el.querySelector(s);
@@ -362,7 +364,8 @@ function quizEditor() {
       <div class="panel">${corners}<h3>My decks</h3><div class="slides-list" id="dl"></div>
         <div class="row" style="margin-top:12px"><button class="btn solid" id="nd">+ New deck</button></div>
         <div class="row" style="margin-top:10px"><select id="cp" style="flex:1"><option value="">Copy a built-in deck…</option>${Object.entries(DECKS).map(([k, d]) => `<option value="${k}">${esc(d.name)}</option>`).join("")}</select></div>
-        <div class="row" style="margin-top:10px"><button class="btn ghost" id="ex">Export</button><label class="btn ghost">Import<input type="file" id="im" accept=".json" hidden></label></div></div>
+        <div class="row" style="margin-top:10px"><button class="btn ghost" id="ex">Export</button><label class="btn ghost">Import<input type="file" id="im" accept=".json" hidden></label></div>
+        <div class="row" style="margin-top:10px"><button class="btn" id="tsv">Copy rows for the Sheet</button></div><p class="label" id="tsvm" style="margin-top:8px">Drafts live in this browser. To publish, copy the rows and paste them at the bottom of the Quiz tab.</p></div>
       <div class="panel">${corners}<div id="de"></div></div></div></div>`);
   app.replaceChildren(v);
   function list() { const dl = $("#dl", v); dl.innerHTML = ""; for (const [k, d] of Object.entries(my)) { const it = h(`<div class="slide-item ${k === cur ? "on" : ""}"><b style="color:${d.color}">${d.icon}</b><span>${esc(d.name)}</span><span class="label">${d.q.length}q</span></div>`); it.onclick = () => { cur = k; render(); }; dl.append(it); } if (!dl.children.length) dl.innerHTML = '<p class="label">No decks yet.</p>'; }
@@ -397,6 +400,9 @@ function quizEditor() {
   $("#nd", v).onclick = () => { const id = "my" + Date.now().toString(36); my[id] = { name: "My deck", icon: "★", color: "#ffb347", q: [["", ["", "", "", ""], 0, ""]] }; cur = id; save(); render(); };
   $("#cp", v).onchange = (e) => { const k = e.target.value; if (!k) return; const src = DECKS[k], id = "my" + Date.now().toString(36);
     my[id] = { name: src.name + " (mine)", icon: src.icon, color: src.color, q: src.q.map((q) => [q[0], q[1].slice(), q[2], q[3]]) }; cur = id; e.target.value = ""; save(); render(); };
+  $("#tsv", v).onclick = async () => { const d = my[cur]; if (!d) return; const id = d.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const rows = d.q.filter((q) => q[0] && q[1][q[2]]).map((q) => { const w = q[1].filter((o, i) => i !== q[2] && o); return [id, q[0], q[1][q[2]], w[0] || "", w[1] || "", w[2] || "", q[3] || "", "yes"].map((x) => String(x).replace(/[\t\n]/g, " ")).join("\t"); }).join("\n");
+    try { await navigator.clipboard.writeText(rows); $("#tsvm").textContent = `Copied ${d.q.length} rows. In the Sheet: click the first empty cell in column A of the Quiz tab, then paste.`; } catch { $("#tsvm").textContent = rows; } };
   $("#ex", v).onclick = () => { const a = h('<a download="my-quiz-decks.json"></a>'); a.href = URL.createObjectURL(new Blob([JSON.stringify(my, null, 2)], { type: "application/json" })); a.click(); };
   $("#im", v).onchange = async (e) => { try { const d = JSON.parse(await e.target.files[0].text()); for (const [k, x] of Object.entries(d)) if (x && Array.isArray(x.q)) my["my" + Date.now().toString(36) + k.slice(-3)] = x; save(); cur = Object.keys(my).pop(); render(); } catch { alert("Couldn't read that file."); } };
   render();
@@ -472,7 +478,7 @@ function builder(cl, q) {
         <label class="label">mate in</label><select id="mn"><option>1</option><option>2</option><option>3</option></select></div>
       <div class="row"><input id="nm" placeholder="Puzzle name" style="flex:1"></div>
       <div class="row" style="margin-top:10px"><input id="fen" style="flex:1" spellcheck="false"></div>
-      <div class="row" style="margin-top:12px"><button class="btn solid" id="ver">Oracle: verify</button><button class="btn" id="sv" disabled>Save</button><button class="btn" id="dk" disabled>+ Club Deck</button><button class="btn" id="sh" disabled>Copy link</button></div>
+      <div class="row" style="margin-top:12px"><button class="btn solid" id="ver">Oracle: verify</button><button class="btn" id="sv" disabled>Save</button><button class="btn" id="dk" disabled>+ Club Deck</button><button class="btn" id="sh" disabled>Copy link</button><button class="btn" id="row" disabled>Copy row for the Sheet</button></div>
       <div class="row" style="margin-top:10px"><button class="btn ghost" id="clr">Empty board</button><button class="btn ghost" id="st">Start position</button></div>
     </div></div>`);
   cl.append(lay);
@@ -486,7 +492,7 @@ function builder(cl, q) {
   pal.firstElementChild.classList.add("on");
   let verified = null;
   const say = (t, c = "") => { $("#bm").className = "msg " + c; $("#bm").textContent = t; };
-  function sync() { $("#fen").value = fen(); $("#tm").value = turn; verified = null; ["sv", "dk", "sh"].forEach((id) => $("#" + id).disabled = true); bd.draw(); }
+  function sync() { $("#fen").value = fen(); $("#tm").value = turn; verified = null; ["sv", "dk", "sh", "row"].forEach((id) => $("#" + id).disabled = true); bd.draw(); }
   $("#tm").onchange = (e) => { turn = e.target.value; sync(); };
   $("#mn").onchange = (e) => { n = +e.target.value; sync(); };
   $("#fen").onchange = (e) => { try { setFromFen(e.target.value.trim()); sync(); } catch { say("That FEN isn't valid.", "bad"); } };
@@ -499,9 +505,10 @@ function builder(cl, q) {
     setTimeout(() => { const t0 = performance.now(); const s = solutions(f, n); const ms = Math.round(performance.now() - t0);
       if (!s.length) return say(`No forced mate in ${n}. Adjust the position. (${ms} ms)`, "bad");
       verified = { name: $("#nm").value.trim() || "Custom puzzle", fen: f, n, hint: "" };
-      ["sv", "dk", "sh"].forEach((id) => $("#" + id).disabled = false);
+      ["sv", "dk", "sh", "row"].forEach((id) => $("#" + id).disabled = false);
       say(`Verified ✓ Mate in ${n}. ${s.length === 1 ? "Unique key move: " + s[0] : s.length + " winning first moves: " + s.slice(0, 4).join(", ")}${s.length > 1 ? ". A unique key move makes a better puzzle." : ""}`, "good"); }, 30);
   };
+  $("#row").onclick = async () => { const t = [verified.name, verified.fen, verified.n, "", "yes"].join("\t"); try { await navigator.clipboard.writeText(t); say("Copied. Paste it into the first empty row of the Puzzles tab, and add a hint in column D.", "good"); } catch { say(t); } };
   $("#sv").onclick = () => { const m = store.get("mypuzzles", []); m.push(verified); store.set("mypuzzles", m); say("Saved to All puzzles.", "good"); };
   $("#dk").onclick = () => { addSlide({ type: "board", title: verified.name, text: "", fen: verified.fen, n: verified.n }); say("Added to Club Deck.", "good"); };
   $("#sh").onclick = async () => { const url = `${location.origin}${location.pathname}#/chess/all?fen=${encodeURIComponent(verified.fen)}&n=${verified.n}`;
@@ -621,6 +628,19 @@ async function exportPptx(slides) {
   await pptx.writeFile({ fileName: (slides[0]?.title || "chess-club").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") + ".pptx" });
 }
 
+/* Sheet Check: what loaded from the Google Sheet and what was skipped */
+views["sheet"] = () => {
+  const r = window.SHEET_REPORT || { tabs: {}, problems: [["Setup", "-", "Not loaded"]] };
+  app.replaceChildren(h(`<div class="view"><div class="kicker">Maintenance</div><h2 class="title">Sheet Check</h2>
+    <div class="sub">${r.ok ? "Content is coming from the Google Sheet." : "Using the built-in backup content: the Sheet could not be read."} Loaded ${r.at ? new Date(r.at).toLocaleString("en-GB", { timeZone: "Asia/Tokyo" }) : "-"} (Tokyo).</div>
+    <div class="grid g3">${["Quiz", "Decks", "Puzzles", "Link4", "Oracle"].map((t) => `<div class="panel"><h3>${t}</h3><div class="stat">${r.tabs[t] ?? 0}</div><p class="label">${t === "Quiz" ? "questions live" : t === "Link4" ? "grids live" : t === "Oracle" ? "tips live" : t.toLowerCase() + " live"}</p></div>`).join("")}</div>
+    <div class="panel" style="margin-top:16px"><h3>Rows skipped (${r.problems.length})</h3>
+      ${r.problems.length ? `<table style="width:100%;border-collapse:collapse;font-size:14px">${r.problems.map(([t, row, m]) => `<tr style="border-top:1px solid var(--line)"><td style="padding:8px 6px;color:var(--acc)">${esc(t)}</td><td style="padding:8px 6px;color:var(--dim)">row ${esc(row)}</td><td style="padding:8px 6px">${esc(m)}</td></tr>`).join("")}</table>` : "<p>Nothing skipped. Every row is live.</p>"}
+      <div class="row" style="margin-top:16px"><a class="btn solid" href="${SHEET.edit}" target="_blank" rel="noopener">Open the Sheet</a><button class="btn" id="rl">Reload from Sheet</button></div>
+      <p class="label" style="margin-top:12px">Google refreshes the published copy about every 5 minutes.</p></div></div>`));
+  $("#rl").onclick = () => { location.hash = "#/sheet"; location.reload(); };
+};
+
 /* Signal: profile */
 views["signal"] = () => {
   app.replaceChildren(h(`<div class="view"><h2 class="title">Signal</h2><div class="sub">// operator profile</div>
@@ -648,4 +668,15 @@ function route() {
   if (document.startViewTransition && route.ran && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(render); else render();
   route.ran = true;
 }
-addEventListener("hashchange", route); route();
+function mergeWeekly() {
+  for (const [deck, q, c, wrong, why] of WEEKLY.quiz) { if (!DECKS[deck]) continue; if (!DECKS[deck].q.some((x) => x[0] === q)) DECKS[deck].q.push([q, [c, ...wrong], 0, why]); }
+  for (const p of WEEKLY.puzzles) if (!PUZZLES.some((x) => x.fen === p.fen)) PUZZLES.push(p);
+  LINKS.push(...WEEKLY.links); ORACLE.push(...WEEKLY.oracle);
+}
+addEventListener("hashchange", route);
+(async () => {
+  const timeout = new Promise((r) => setTimeout(() => r({ ok: false, at: new Date().toISOString(), tabs: {}, problems: [["Sheet", "-", "Timed out after 5 s, using backup content"]] }), 5000));
+  try { window.SHEET_REPORT = await Promise.race([loadSheet({ DECKS, LINKS, PUZZLES, ORACLE }, { validateFen, solutions }), timeout]); }
+  catch (e) { window.SHEET_REPORT = { ok: false, tabs: {}, problems: [["Sheet", "-", e.message]] }; }
+  mergeWeekly(); route();
+})();
