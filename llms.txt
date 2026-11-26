@@ -1,0 +1,13 @@
+# Signal Station (noahmenon.com)
+
+> Free, no-sign-up study games for IB Diploma students and chess players. Scores stay in the visitor's browser.
+
+## What's on the site
+- Quiz Arcade: multiple-choice decks for IB Economics, IB Psychology and IB Biology, plus Sport Lab and Game Theory, each answer explained. New questions weekly.
+- Chess Lab: a daily chess puzzle, classic checkmate patterns (back-rank, Arabian, corner knight, queen box) and a puzzle builder.
+- Club Deck: builds chess-club puzzle presentations and exports them to PowerPoint in one click.
+- Link-4: a daily word-connection grid (four groups of four).
+- AI Lab: short interactive missions explaining AI and rating maths (such as the Elo formula) with sliders and charts, no code.
+
+## Links
+- Home: https://noahmenon.com/
