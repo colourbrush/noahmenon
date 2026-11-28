@@ -1,5 +1,5 @@
 // Content file. Weekly updates add to these arrays.
-export const UPDATED = "2026-11-24";
+export const UPDATED = "2026-11-28";
 
 export const DECKS = {
   econ: { name: "Economics", icon: "◈", color: "#38f8c8", q: [
